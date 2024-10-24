@@ -6,11 +6,12 @@
     (backward-chain $goal &baseall &baseall)
 )
 
-; !(query (last $x (Cons 1 Nil)))
-; !(query (last $x (Cons 1 (Cons 2 (Cons 3 Nil)))))
+!(query (last $x (Cons 1 (Cons 2 (Cons 3 Nil)))))
 
-; !(query (is $x (+ 1 2)))
-!(query (length Nil $out))
 !(query (length (Cons 1 (Cons 2 (Cons 3 Nil))) $out))
 
 !(query (sum 3 $x))
+
+!(query (append (Cons 1 (Cons 2 Nil)) (Cons 3 (Cons 4 Nil)) $x))
+!(query  (append (Cons 1 (Cons 2 Nil)) $Out (Cons 1 (Cons 2 (Cons 3 (Cons 4 Nil))))))
+!(query (append $What $Out (Cons 1 (Cons 2 (Cons 3 (Cons 4 Nil))))))
