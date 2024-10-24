@@ -1,7 +1,7 @@
 
 !(import! &self fol-bc)
 !(bind! &baseall (new-space))
-!(import! &baseall kb)
+!(import! &baseall fol-bc.kb)
 (= (query $goal)
     (backward-chain $goal &baseall &baseall)
 )

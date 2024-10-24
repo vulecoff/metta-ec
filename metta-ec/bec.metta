@@ -1,6 +1,14 @@
 ;; Basic event calculus axioms without constraints
 
 
+; (= (time-domain! $max-time) (
+;     (if (== $max-time 0)
+;         (add-atom &self (time 0))
+;         (let () (add-atom &self (time $max-time)) 
+;             (time-domain! (- $max-time 1)))
+;     )
+; ))
+
 ((stoppedIn $t1 $f $t2) :- (
     (time $t1) (time $t2)
     (bool (< $t1 $t))
