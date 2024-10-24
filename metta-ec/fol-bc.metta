@@ -37,7 +37,7 @@
         (let* (
             (($cur $rest) (decons-atom $body))
             ($ok (backward-chain $cur $kb $rb)) ;; buggy place in hyperon, lets lack multi-directional binding
-            ; (() (println! (out $cur $goal)))
+            (() (println! (out $cur $goal)))
         ) (if (== $ok (empty))
             (empty)
             (match-body $rest $kb $rb $goal)

@@ -12,7 +12,7 @@
 (happens Sneeze 3)
 (happens Shoot 4)
 
-(time 0) (time 1) (time 2) (time 3) (time 4)
-(time 5)
+(tp 0) (tp 1) (tp 2) (tp 3) (tp 4)
+(tp 5)
 
 !(import! &self bec)
