@@ -16,9 +16,9 @@
 ;; Base case
 (= (backward-chain $goal $kb $rb)
    (case $goal (
-    ((is $a $b) (let $a $b (is $a $b)))
-    ((bool $expr) (if $expr True (empty)))
-    ((naf $expr) (if (has-match $kb $goal) (empty) True))
+    ((is $a $b) (let $a $b (is $a $b))) ;; prolog eval & assign
+    ((bool $expr) (if $expr True (empty))) ;; if predicate is a boolean. This might be unnecessary
+    ((naf $expr) (if (has-match $kb $goal) (empty) True)) ;; negation-as-failure
     ($_ (match $kb $goal $goal))
    ))
 )
