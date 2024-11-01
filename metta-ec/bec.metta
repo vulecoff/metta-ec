@@ -41,7 +41,7 @@
 
 ((-holdsAt $f $t) :- (
     (tp $t)
-    (bool (< 0 t))
+    (bool (< 0 $t))
     (initiallyN $f)
     (naf (startedIn 0 $f $t))
 ))

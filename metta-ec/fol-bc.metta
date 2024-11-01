@@ -1,7 +1,7 @@
 ;; First-order logic backward chainer using match
 
-;; Note: this only works within Mettalog.
-;; Multi-directional variable binding is still buggy in Hyperon
+;; Note: this only works within Mettalog. Multi-directional variable binding is still buggy in Hyperon
+;; Suffers infinite loop problem (repeated goals)
 
 ;; TODO: this is inefficient, we just need at least 1 match
 (= (has-match $space $g)
