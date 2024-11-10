@@ -35,10 +35,10 @@
     (if (== $body ())
         $goal
         (let* (
-            (() (println! (in $goal)))
             (($cur $rest) (decons-atom $body))
-            ($_ (backward-chain $cur $kb $rb)) 
-            (() (println! (out $cur $goal)))
+            ; (() (println! (in $cur $goal)))
+            ($cur (backward-chain $cur $kb $rb)) 
+            ; (() (println! (out $cur $goal)))
         ) 
             (match-body $rest $kb $rb $goal)
         )
