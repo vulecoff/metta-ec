@@ -15,12 +15,12 @@
 
 ;; Base case
 (= (backward-chain $goal $kb $rb)
-   (case $goal (
-    ((is $a $b) (let $a $b (is $a $b))) ;; prolog eval & assign
-    ((bool $expr) (if $expr True (empty))) ;; if predicate is a boolean. This might be unnecessary
-    ((naf $expr) (if (has-match $kb $goal) (empty) True)) ;; negation-as-failure
-    ($_ (match $kb $goal $goal))
-   ))
+    (case $goal (
+        ((is $a $b) (let $a $b (is $a $b))) ;; prolog eval & assign
+        ((bool $expr) (if $expr True (empty))) ;; if predicate is a boolean. This might be unnecessary
+        ((naf $expr) (if (has-match $kb $goal) (empty) True)) ;; negation-as-failure
+        ($_ (let $goal (match $kb $goal $goal) $goal))
+    )) 
 )
 
 ;; Recursive Case
@@ -35,13 +35,13 @@
     (if (== $body ())
         $goal
         (let* (
+            (() (println! (in $goal)))
             (($cur $rest) (decons-atom $body))
-            ($ok (backward-chain $cur $kb $rb)) ;; buggy place in hyperon, lets lack multi-directional binding
+            ($_ (backward-chain $cur $kb $rb)) 
             (() (println! (out $cur $goal)))
-        ) (if (== $ok (empty))
-            (empty)
+        ) 
             (match-body $rest $kb $rb $goal)
-        ))
+        )
     )
 )
 
