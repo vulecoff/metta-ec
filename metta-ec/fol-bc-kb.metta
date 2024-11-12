@@ -21,8 +21,19 @@
 ))
 
 ;; list append
-
 (append Nil $L $L)
 ((append (Cons $H $T) $L (Cons $H $R)) :- (
     (append $T $L $R)
+))
+
+;; negation as failure test
+((bachelor $x) :- (
+    (man $x)
+    (naf (married $x))
+))
+(man John) (man Tim)
+(married Tim)
+
+((woman $x) :- (
+    (naf (man $x))
 ))
