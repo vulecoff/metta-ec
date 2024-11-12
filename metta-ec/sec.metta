@@ -61,7 +61,8 @@
             ;; iertia for pos fluents
             ($prevPosFluents (collapse (match $kb (Holds ($fp1 := true) $tp) $fp1)))
             ($1_ (map-atom $prevPosFluents $posF1 (let ()
-                (if (has-match $kb (, (Happens $ep1 $tp) (Terminates $ep1 $posF1)))
+                ;; covertly negation-as-failure
+                (if (has-match $kb (, (Happens $ep1 $tp) (Terminates $ep1 $posF1))) 
                     ()
                     (add-holds! $kb $posF1 true $t)
                 )
@@ -76,17 +77,15 @@
             )))
             (() (add-holds-list! $kb $negFluents false $t))
 
+            ; ;; inertia for negative fluents
             ($prevNegFluents (collapse (match $kb (Holds ($fn1 := false) $tp) $fn1)))
             ($2_ (map-atom $prevNegFluents $negF1 (let ()
-                (if (has-match $kb (, (Happens $en1 $tp) (Terminates $en1 $negF1)))
+                (if (has-match $kb (, (Happens $en1 $tp) (Initiates $en1 $negF1)))
                     ()
-                    (add-holds! $kb $negF1 true $t)
+                    (add-holds! $kb $negF1 false $t)
                 )
                 ()
             )))
-            ;; TODO: investingate scope and name conflicts? 
-
-
         ) (temporal-project-helper! $kb (+ 1 $t) $maxTime))
     )
 )
@@ -95,21 +94,58 @@
     (temporal-project-helper! $kb 0 $maxTime)
 )
 
-;; Problem Encoding
-(InitiallyP Unloaded) (InitiallyP Alive)
-(Initiates Load Loaded) (Terminates Load Unloaded)
-(Initiates Shoot Dead) (Terminates Shoot Alive)
-(Initiates Shoot Unloaded) (Terminates Shoot Loaded)
-(Happens Load 1) (Happens Wait 2) (Happens Shoot 3)
+(= (add-atoms! $kb $atoms-list)
+    (if (== $atoms-list ()) ()
+        (let* (
+            (($head $rest) (decons-atom $atoms-list))
+            (() (add-atom $kb $head))
+        ) (add-atoms! $kb $rest))
+    )
+)
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Problem Encodings ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-!(temporal-project! &self 4)
+;; Yale Shooting scenario
+!(bind! &yaleshooting (new-space))
+!(add-atoms! &yaleshooting (
+    (InitiallyP Unloaded) (InitiallyP Alive)
+    (InitiallyN Loaded) (InitiallyN Dead)
+    (Initiates Load Loaded) (Terminates Load Unloaded)
+    (Initiates Shoot Dead) (Terminates Shoot Alive)
+    (Initiates Shoot Unloaded) (Terminates Shoot Loaded)
+    (Happens Load 1) (Happens Wait 2) (Happens Shoot 3)
+))
 
-!(match &self 
+!(temporal-project! &yaleshooting 4)
+
+!(match &yaleshooting 
     (, (Holds ($f := true) $t)
         (Holds ($f := false) $t)
     )
-    (Error $f ContradictingFluent)
+    (Error (Yaleshooting $f $t) ContradictingFluent)
 )
-
-!(match &self (Holds ($f := true) $t) (Holds ($f := true) $t))
-!(match &self (Holds ($f := false) $t) (Holds ($f := false) $t))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Unloaded := true) $t) $t)
+    (0 1 4))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Unloaded := false) $t) $t)
+    (2 3))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Loaded := true) $t) $t)
+    (2 3))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Loaded := false) $t) $t)
+    (0 1 4))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Alive := true) $t) $t)
+    (0 1 2 3))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Alive := false) $t) $t)
+    (4))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Dead := false) $t) $t)
+    (0 1 2 3))
+!(assertEqualToResult 
+    (match &yaleshooting (Holds (Dead := true) $t) $t)
+    (4))
