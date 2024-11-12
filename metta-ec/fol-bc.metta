@@ -17,9 +17,9 @@
 (= (backward-chain $goal $kb $rb)
     (case $goal (
         ((is $a $b) (let $a $b (is $a $b))) ;; prolog eval & assign
-        ((bool $expr) (if $expr True (empty))) ;; if predicate is a boolean. This might be unnecessary
-        ((naf $expr) (if (has-match $kb $goal) (empty) True)) ;; negation-as-failure
-        ($_ (let $goal (match $kb $goal $goal) $goal))
+        ((bool $expr) (if $expr $goal (empty))) ;; if predicate is a boolean. This might be unnecessary
+        ((naf $expr) (if (has-match $kb $goal) (empty) $goal)) ;; negation-as-failure
+        ($_ (match $kb $goal $goal))
     )) 
 )
 
@@ -37,8 +37,8 @@
         (let* (
             (($cur $rest) (decons-atom $body))
             ; (() (println! (in $cur $goal)))
-            ($cur (backward-chain $cur $kb $rb)) 
-            ; (() (println! (out $cur $goal)))
+            ($cur (backward-chain $cur $kb $rb))  ;; chain on cur & unify back to propagate vars to $goal
+            (() (println! (out $cur $goal)))
         ) 
             (match-body $rest $kb $rb $goal)
         )

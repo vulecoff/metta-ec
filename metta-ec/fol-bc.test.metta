@@ -7,11 +7,11 @@
 )
 
 
-; !(query (last $x (Cons 1 (Cons 2 (Cons 3 Nil)))))
+!(query (last $x (Cons 1 (Cons 2 (Cons 3 Nil)))))
 
-; !(query (length (Cons 1 (Cons 2 (Cons 3 Nil))) $out))
+!(query (length (Cons 1 (Cons 2 (Cons 3 Nil))) $out))
 
-; !(query (sum 3 $x))
+!(query (sum 3 $x))
 
 !(query (append (Cons 1 (Cons 2 Nil)) (Cons 3 (Cons 4 Nil)) $x))
 !(query  (append (Cons 1 (Cons 2 Nil)) $Out (Cons 1 (Cons 2 (Cons 3 (Cons 4 Nil))))))
