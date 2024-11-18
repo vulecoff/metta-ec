@@ -1,9 +1,11 @@
 
 $containers = @('mettalog', 'hyperon')
-$hostSrcDir = "./metta-ec/."
+$dirs = @('metta-ec', 'metta-pddl')
 
-$mettalogDestDir = "/home/user/devspace/metta-ec"
-$hyperonDestDir = "/home/metta-ec"
+$hostSrcDirs = $dirs | % { "./" + $_ + "/." }
+
+$mettalogDestDirs = $dirs | % { "/home/user/devspace/" + $_ }
+$hyperonDestDirs = $dirs | % { "/home/" + $_ }
 
 function checkContainerRunning ($container) {
     if (-not $(docker ps --filter "name=$container" --filter "status=running" -q)) {
@@ -21,14 +23,20 @@ function doSync($container, $hostSrc, $containerDest) {
     docker cp $hostSrc ${container}:${containerDest}
 }
 
+function doSyncList($container, $srcList, $destList) {
+    for ($i = 0; $i -le ($srcList.length - 1); $i += 1) {
+        doSync $container $srcList[$i] $destList[$i]
+    }
+}
+
 foreach ($c in $args) {
     if ($c -in $containers) {
         checkContainerRunning $c
         if ($c -eq "mettalog") {
-            doSync $c $hostSrcDir $mettalogDestDir
+            doSyncList $c $hostSrcDirs $mettalogDestDirs
         }
         elseif ($c -eq "hyperon") {
-            doSync $c $hostSrcDir $hyperonDestDir
+            doSyncList $c $hostSrcDirs $hyperonDestDirs
         }
     }
     else {
