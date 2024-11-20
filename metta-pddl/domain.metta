@@ -1,5 +1,9 @@
 
 ;; TODO: how to levarage native MeTTa for typing?
+
+;; predicates: clear/1, on-table/1, arm-empty, holding/1, on/2
+
+(:object ball) (:object table)
 (:action pickup 
     :parameters ($x)
     :precondition (And ((clear $x) (on-table $x) (arm-empty)))
@@ -14,7 +18,27 @@
         (Not (holding $x))))
 )
 
-;; experimenting with interpreting action
+(:action stack
+    :parameters ($x $y)
+    :precondition (And (
+        (clear $y) (holding $x)
+    ))
+    :effect (And (
+        (arm-empty) (clear $x) (on $x $y) 
+        (Not (clear $y)) (Not (holding $x))
+    ))
+)
+
+(:action unstack
+    :parameters ($x $y)
+    :precondition (And ((on $x $y) (clear $x) (arm-empty)))
+    :effect (And (
+        (holding $x) (clear $y) (Not (on $x $y))
+        (Not (clear $x)) (Not (arm-empty))
+    ))
+)
+
+;; unify a list of args with list of parameters variable
 (= (substitute () $params) 
     (if (not (== $params ()))  
         (Error $params IncompatibleLength)
@@ -23,36 +47,24 @@
 )
 (= (substitute $args ())
     (if (not (== $args ()))
-        (Error $params IncompatibleLength)
+        (Error $args IncompatibleLength)
+        (empty)
     )
 )
 (= (substitute $args $params)
-    (if (and (== $args ()) (== $params ()))
-        ()
-        (let* (
-            (($argsH $argsT) (decons-atom $args))
-            (($paramsH $paramsT) (decons-atom $params))
-            ($subst (substitute $argsT $paramsT))
-            )
-        (if-error $subst $subst 
+    (if (xor (== $args ()) (== $params ()))
+        (empty)
+        (if (and (== $args ()) (== $params ())) 
+            ()
+            (let* (
+                (($argsH $argsT) (decons-atom $args))
+                (($paramsH $paramsT) (decons-atom $params))
+                ($subst (substitute $argsT $paramsT))
+                )
             (unify $argsH $paramsH (cons-atom $argsH $subst) (Error $args FailedUnification)))
         )
     )
 )
-
-(= (ground-action $actionId $args)
-    (match &self
-        (:action $actionId
-            :parameters $params 
-            :precondition $preds 
-            :effect $effs
-        )
-        (let $params (substitute $args $params)
-            (OUT (preds $preds) (effs $effs))
-        )
-    )
-)
-
 ;; (State id fluent) ;; only true fluent
 
 ;; check satisfaction of a ground formula
@@ -88,17 +100,40 @@
     ))
 )
 
+(= (action-applicable $stateId $actionId $args)
+    (match &self (:action $actionId
+            :parameters $params 
+            :precondition $preds 
+            :effect $effs
+    )  (let $params (substitute $args $params) 
+                (formula-satisfaction $stateId $preds)))
+)
 
+;; (:object x) TODO: object typing, how to only extract objects with potential updating? in a state?
+(= (args-combination $params)
+    (if (== $params ()) ()
+        (let* (
+            (($_ $rest) (decons-atom $params))
+            ($h (match &self (:object $o) $o))
+            ($r (args-combination $rest))
+        ) (cons-atom $h $r))
+    )
+)
 
-; (= (applicable $stateId $actionId)
-    
-; )
+;; for each action & combination of args, try if its precondition is satisfied in state
+(= (actions-applicable $stateId)
+    (match &self (:action $actionId
+            :parameters $params 
+            :precondition $preds 
+            :effect $effs
+    ) (let* (
+        ($args (args-combination $params))
+        ($params (substitute $args $params))
+        ) (if (formula-satisfaction $stateId $preds) ($actionId $params) (empty))
+    ))
+)
 
-;; satisfaction: try all possible object suitable for the action, 
-; !(ground-action pickup (ball))
-
-
-;; state fluents must all be grounded, semantics for non-ground state?
+;; state fluents must all be grounded, TODO: semantics for non-ground state?
 (State 1 (clear ball)) (State 1 (on-table ball)) (State 1 (arm-empty))
 
 !(formula-satisfaction 1 (clear ball))
@@ -108,3 +143,7 @@
 !(formula-satisfaction 1 
     (Or ((arm-empty) (And ((holding ball) (clear ball)))))
 )
+
+!(action-applicable 1 pickup (ball))
+!(action-applicable 1 putdown (ball))
+!(actions-applicable 1)
