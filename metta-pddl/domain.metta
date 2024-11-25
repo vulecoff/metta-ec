@@ -133,6 +133,20 @@
     ))
 )
 
+(= (action-applyEffect $actionId $args)
+    (match &self (:action $actionId
+            :parameters $params 
+            :precondition $preds 
+            :effect $effs
+    ) (unify $args $params $effs FailedUnification)) ;; TODO: replace substitute
+)
+
+(= (state-transition $stateId) ;; adding state directly, or return state?
+    (let* (
+        (($actionId $args) (actions-applicable $stateId))
+    ) (action-applyEffect $actionId $args))
+)
+
 ;; state fluents must all be grounded, TODO: semantics for non-ground state?
 (State 1 (clear ball)) (State 1 (on-table ball)) (State 1 (arm-empty))
 
@@ -147,3 +161,5 @@
 !(action-applicable 1 pickup (ball))
 !(action-applicable 1 putdown (ball))
 !(actions-applicable 1)
+
+!(state-transition 1)
