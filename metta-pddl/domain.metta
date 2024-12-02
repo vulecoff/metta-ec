@@ -3,7 +3,22 @@
 
 ;; predicates: clear/1, on-table/1, arm-empty, holding/1, on/2
 
-(:object ball) (:object table)
+(:object a) (:object b)
+(:object c)
+(:init (
+    (on-table a)
+    (on-table b)
+    (on-table c)
+    (clear a)
+    (clear b)
+    (clear c)
+    (arm-empty)
+))
+(:goal (And (
+    (on a b)
+    (on b c)
+)))
+
 (:action pickup 
     :parameters ($x)
     :precondition (And ((clear $x) (on-table $x) (arm-empty)))
@@ -119,14 +134,6 @@
 )
 
 
-(= (is-in $item $list) 
-    (if (== $list ()) 
-        False
-        (let ($H $T) (decons-atom $list) 
-            (if (== $H $item) True (is-in $item $T))
-        )
-    )
-)
 (= (signed-fluents $list)
     (if (== $list ())
         (() ())
@@ -142,7 +149,7 @@
 )
 
 ;; diffing algorithm? 
-(= (state-diff-update $allStates $diffs)
+(= (state-diff $allStates $diffs)
     (let* (
         ((And $d) $diffs)
         (($pos $neg) (signed-fluents $d))
@@ -156,12 +163,15 @@
         )))
     )  $s2)
 )
-(= (state-transition $stateId) ;; adding state directly, or return state?
+
+
+;; a list of atom to add for the next non-determinisitc state (out of all possible states)
+(= (state-transition $stateId) 
     (let* (
         (($actionId $args) (actions-applicable $stateId))
         ($effsDiff (action-applyEffect $actionId $args))
         ($stsEffs (collapse (match &self (State $stateId $form) $form)))
-    ) (state-diff-update $stsEffs $effsDiff))
+    ) (state-diff $stsEffs $effsDiff))
 )
 
 (= (goal-satisfied $stateId)
@@ -171,22 +181,57 @@
 ;; Performance note: use space for global state versus pass as arguments, 
 ;; depends on complexity of (match)
 
-!(import! &self lib)
+!(import! &self list.metta)
 
-;; with max depth, 
-; (= (fw-st ))
+(= (add-state-fluents! $stateId $fluents)
+    (if (== $fluents ())
+        ()
+        (let* (
+            (($h $rest) (decons-atom $fluents))
+            (() (add-atom &self (State $stateId $h)))
+        ) (add-state-fluents! $stateId $rest))
+    )
+)
 
+;; for each next state, add its fluents and enqueue id
+(= (enqueue-next-states! $curQ $states $nextUID)
+    (if (== $states ())
+        ($curQ $nextUID)
+        (let* (
+            (($stateFluents $rest) (decons-atom $states))
+            (() (add-state-fluents! $nextUID $stateFluents))
+            ($q (L-push-back $curQ $nextUID))
+            ($id (+ $nextUID 1))
+        ) (enqueue-next-states! $q $rest $id))
+    )
+)
 
-;; process current state, then add bunches to queue, return new queue
-; (= (enqueue-next-states $curQ $nextStates $nextStateId)
-;     (if (== $states ())
-;         $curQ
-;         (let* (
-;             ($q (insert-queue $curQ $nextStateId))
-;             ($id (+ $nextStateId 1))
-;         ) )
-;     )
-; )
+(= (fw-state-search $queue $nextUID $statesLimit)
+    (if (L-empty? $queue)   FailedToReachGoal
+    (if (>= $nextUID $statesLimit)  (Error $statesLimit "Limit of states exploration reached.")   
+        (let $curState (L-front $queue) 
+            (if (goal-satisfied $curState)
+                GoalReached
+                (let* (
+                    ($q1 (L-pop-front $queue))
+                    ($nextStates (collapse (state-transition $curState)))
+                    (() (println! (Processing $curState $nextStates)))
+                    (($q2 $uid) (enqueue-next-states! $q1 $nextStates $nextUID))
+                ) (fw-state-search $q2 $uid $statesLimit))
+            )
+        ))
+    )
+)
+
+(= (planner-main $statesLimit)
+    (let* (
+        ($initState (match &self (:init $f) $f))
+        (($initQ $nextUID) (enqueue-next-states! () ($initState) 0))
+    ) 
+    ; ()
+    (fw-state-search $initQ $nextUID $statesLimit)
+    )
+)
 
 ;; NEXT: modularize space
 
@@ -205,4 +250,17 @@
 !(action-applicable 1 putdown (ball))
 !(actions-applicable 1)
 
-!(state-transition 1)
+; !(state-transition 1)
+
+; !(planner-main 100)
+
+;; check state
+; !(SignPost "Checking States starting here")
+; !(match &self (State $id $expr) (State $id $expr))
+
+; !(let* (
+;     ($next (collapse (state-transition 0)))
+;     (() (println! (OUT $next)))
+;     ($out (enqueue-next-states! () $next 1))
+;     (() (println! $out))
+; ) (empty))
