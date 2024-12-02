@@ -4,19 +4,15 @@
 ;; predicates: clear/1, on-table/1, arm-empty, holding/1, on/2
 
 (:object a) (:object b)
-(:object c)
 (:init (
     (on-table a)
     (on-table b)
-    (on-table c)
     (clear a)
     (clear b)
-    (clear c)
     (arm-empty)
 ))
 (:goal (And (
     (on a b)
-    (on b c)
 )))
 
 (:action pickup 
@@ -181,7 +177,7 @@
 ;; Performance note: use space for global state versus pass as arguments, 
 ;; depends on complexity of (match)
 
-!(import! &self list.metta)
+!(import! &self list)
 
 (= (add-state-fluents! $stateId $fluents)
     (if (== $fluents ())
@@ -210,15 +206,15 @@
     (if (L-empty? $queue)   FailedToReachGoal
     (if (>= $nextUID $statesLimit)  (Error $statesLimit "Limit of states exploration reached.")   
         (let $curState (L-front $queue) 
-            (if (goal-satisfied $curState)
+            (let () (println! (Processing $curState (collapse (match &self (State $curState $f) $f))))
+                (if (goal-satisfied $curState)
                 GoalReached
                 (let* (
                     ($q1 (L-pop-front $queue))
                     ($nextStates (collapse (state-transition $curState)))
-                    (() (println! (Processing $curState $nextStates)))
                     (($q2 $uid) (enqueue-next-states! $q1 $nextStates $nextUID))
                 ) (fw-state-search $q2 $uid $statesLimit))
-            )
+            ) )
         ))
     )
 )
@@ -236,23 +232,23 @@
 ;; NEXT: modularize space
 
 ;; state fluents must all be grounded, TODO: semantics for non-ground state?
-(State 1 (clear ball)) (State 1 (on-table ball)) (State 1 (arm-empty))
+; (State 1 (clear ball)) (State 1 (on-table ball)) (State 1 (arm-empty))
 
-!(formula-satisfaction 1 (clear ball))
-!(formula-satisfaction 1 (Not (holding ball)))
-!(formula-satisfaction 1 (Or ((clear ball) (holding ball))))
-!(formula-satisfaction 1 (And ((clear ball) (Not (holding ball)))))
-!(formula-satisfaction 1 
-    (Or ((arm-empty) (And ((holding ball) (clear ball)))))
-)
+; !(formula-satisfaction 1 (clear ball))
+; !(formula-satisfaction 1 (Not (holding ball)))
+; !(formula-satisfaction 1 (Or ((clear ball) (holding ball))))
+; !(formula-satisfaction 1 (And ((clear ball) (Not (holding ball)))))
+; !(formula-satisfaction 1 
+;     (Or ((arm-empty) (And ((holding ball) (clear ball)))))
+; )
 
-!(action-applicable 1 pickup (ball))
-!(action-applicable 1 putdown (ball))
-!(actions-applicable 1)
+; !(action-applicable 1 pickup (ball))
+; !(action-applicable 1 putdown (ball))
+; !(actions-applicable 1)
 
 ; !(state-transition 1)
 
-; !(planner-main 100)
+!(planner-main 100)
 
 ;; check state
 ; !(SignPost "Checking States starting here")
