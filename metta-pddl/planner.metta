@@ -5,7 +5,7 @@
 
 ;; check satisfaction of a ground formula
 
-!(import! &kb problem)
+
 
 (= (formula-satisfaction $stateId (Not $expr))
     (not (formula-satisfaction $stateId $expr))
@@ -199,6 +199,18 @@
     (match &kb (:goal $expr) (formula-satisfaction $stateId $expr))
 )
 
+(= (retrace-steps $toStateId)
+    (if (== $toStateId 0)
+        ()
+        (let* (
+            (($fromId $action $args) (match &kb 
+                    (Succ $fromId ($action $args) $toStateId)
+                    ($fromId $action $args)))
+            ($prevSteps (retrace-steps $fromId))
+        ) (L-push-back $prevSteps ($action $args)))
+    )
+)
+
 ;; Performance note: use space for global state versus pass as arguments, 
 ;; depends on complexity of (match)
 
@@ -240,15 +252,15 @@
     (if (L-empty? $queue)   FailedToReachGoal
         (let $curState (L-front $queue) 
             (let () 
-                    ; ()
-                    (println! 
-                        (Processing $curState 
-                            (collapse (match &kb (State $curState $f) $f))
-                            (collapse (match &kb (Succ $from ($action $args) $curState) ($from ($action $args))))
-                            ; $queue
-                            (state-visited $curState)
-                        ))
-                (if (goal-satisfied $curState) GoalReached
+                    ()
+                    ; (println! 
+                    ;     (Processing $curState 
+                    ;         (collapse (match &kb (State $curState $f) $f))
+                    ;         (collapse (match &kb (Succ $from ($action $args) $curState) ($from ($action $args))))
+                    ;         ; $queue
+                    ;         (state-visited $curState)
+                    ;     ))
+                (if (goal-satisfied $curState) (retrace-steps $curState)
                 (if (> $curState $statesLimit)  (Error $statesLimit "Limit of states exploration reached.")   
                 (let* (
                     ($q1 (L-pop-front $queue))
@@ -298,11 +310,9 @@
 ; !(actions-applicable 1)
 
 ; !(state-transition 1)
-
+!(import! &kb domain)
+!(import! &kb task1)
 !(planner-main 100)
 
-;; check state
-; !(SignPost "Checking States starting here")
-; !(match &kb (State $id $expr) (State $id $expr))
 
 
