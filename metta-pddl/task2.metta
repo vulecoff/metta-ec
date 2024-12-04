@@ -1,21 +1,19 @@
+(:object a)
+(:object b)
+(:object c)
+(:object d)
 
-;; took 37 seconds
-
-(:object a) (:object b)
-(:object c) ;;
 (:init (
     (on-table a)
-    (on-table b)
-    (clear a)
-    (clear b)
+    (on b a) (on c b)
+    (on d c) (clear d)
     (arm-empty)
-    (on-table c) (clear c) ;;
 ))
 (:goal (And (
-    (on a b)
-    (on b c) ;;
+    (on b a)
+    (on c b)
+    (on a d)
 )))
-
 
 (:action pickup 
     :parameters ($x)

@@ -1,19 +1,14 @@
-
-;; took 37 seconds
-
-(:object a) (:object b)
-(:object c) ;;
+(:object a)
+(:object b)
 (:init (
-    (on-table a)
-    (on-table b)
-    (clear a)
-    (clear b)
+    (on-table a) 
+    (on-table b)  
+    (clear a)  (clear b) 
     (arm-empty)
-    (on-table c) (clear c) ;;
 ))
+
 (:goal (And (
     (on a b)
-    (on b c) ;;
 )))
 
 

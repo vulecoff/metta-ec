@@ -5,7 +5,7 @@
 
 ;; check satisfaction of a ground formula
 
-
+!(import! &kb task2) ;; Hyperon requires to be at the top
 
 (= (formula-satisfaction $stateId (Not $expr))
     (not (formula-satisfaction $stateId $expr))
@@ -83,7 +83,6 @@
     ) (unf $args $params $effs FailedUnification))
 )
 
-
 (= (signed-fluents $list)
     (if (== $list ())
         (() ())
@@ -99,7 +98,7 @@
 )
 
 ;; diffing algorithm? 
-(= (state-diff-1 $allStates $diffs)
+(= (state-diff $allStates $diffs)
     (let* (
         ((And $d) $diffs)
         (($pos $neg) (signed-fluents $d))
@@ -112,54 +111,6 @@
             (superpose $pos)
         )))
     )  $s2)
-)
-
-(= (diff-2-update-pos $allStates $pos)
-    (if (== $pos ())
-        $allStates
-        (let* (
-            (($h $rest) (decons-atom $pos))
-            ($diffed (diff-2-update-pos $allStates $rest))
-        ) 
-            (if (L-contains? $allStates $h)
-                (Error $h "Attempting to add an existing state fluent")
-                (cons-atom $h $diffed)
-            )
-        )
-    )
-)
-(= (diff-2-update-neg $allStates $neg)
-    (if (== $allStates ())
-        ()
-        (let* (
-            (($h $t) (decons-atom $allStates))
-            ($diffed (diff-2-update-neg $t $neg))
-        ) (if (L-contains? $neg $h)
-            $diffed
-            (cons-atom $h $diffed)
-        ))
-    )
-)
-
-(= (state-diff-2 $allStates $diffs)
-     (let* (
-        ((And $d) $diffs)
-        (($pos $neg) (signed-fluents $d))
-        ($s1 (diff-2-update-pos $allStates $pos))
-        ($s2 (diff-2-update-neg $s1 $neg))
-    )  $s2)
-)
-
-;; dummy
-(= (state-diff $allStates $diff)
-    (let* (
-        ($s1 (state-diff-1 $allStates $diff))
-        ; ($s2 (state-diff-2 $allStates $diff))
-    ) $s1
-    ; (if (L-seteq? $s1 $s2)
-    ;     $s1
-    ;     (Error ($s1 $s2) "Diffing algorithm mismatched"))
-    )
 )
 
 ;; a list of atom to add for the next non-determinisitc state (out of all possible states)
@@ -195,6 +146,12 @@
     )
 )
 
+(= (state-enqueued? $stateId)
+    (let $s (collapse (match &kb (State $stateId $f) $stateId))
+        (if (== $s ()) False True)
+    )
+)
+
 (= (goal-satisfied $stateId)
     (match &kb (:goal $expr) (formula-satisfaction $stateId $expr))
 )
@@ -213,6 +170,7 @@
 
 ;; Performance note: use space for global state versus pass as arguments, 
 ;; depends on complexity of (match)
+;; TODO: match in space versus list
 
 !(import! &self alist)
 
@@ -228,63 +186,59 @@
 
 ;; states = [(fluents) (fluents2)]
 ;; for each next state, add its fluents and enqueue id
-(= (enqueue-next-states! $fromID $curQ $states $nextUID)
+(= (enqueue-next-states! $fromID $states $nextUID)
     (if (== $states ())
-        ($curQ $nextUID)
+        $nextUID
         (let* (
             (($state $rest) (decons-atom $states))
             ((($action $args) $stateFluents) $state)
             ($visited (state-visited? $stateFluents))
-            ; (() (println! (ENQUEING $nextUID $stateFluents $visited)))
         ) (if (== $visited ())  
             (let* (
                 (() (add-state-fluents! $nextUID $stateFluents))
                 (() (add-atom &kb (Succ $fromID ($action $args) $nextUID)))
-                ($q (L-push-back $curQ $nextUID))
+                (() (println! (ENQUEUED $nextUID)))
                 ($id (+ $nextUID 1))
-            ) (enqueue-next-states! $fromID $q $rest $id))
+            ) (enqueue-next-states! $fromID $rest $id))
 
-            (enqueue-next-states! $fromID $curQ $rest $nextUID)) ;; skipped
+            (enqueue-next-states! $fromID $rest $nextUID)) ;; skipped
         ))
 )
 
-(= (fw-state-search $queue $nextUID $statesLimit) ;; CHECK VISITED STATE?
-    (if (L-empty? $queue)   FailedToReachGoal
-        (let $curState (L-front $queue) 
-            (let () 
-                    ()
-                    ; (println! 
-                    ;     (Processing $curState 
-                    ;         (collapse (match &kb (State $curState $f) $f))
-                    ;         (collapse (match &kb (Succ $from ($action $args) $curState) ($from ($action $args))))
-                    ;         ; $queue
-                    ;         (state-visited $curState)
-                    ;     ))
-                (if (goal-satisfied $curState) (retrace-steps $curState)
-                (if (> $curState $statesLimit)  (Error $statesLimit "Limit of states exploration reached.")   
-                (let* (
-                    ($q1 (L-pop-front $queue))
-                    ($nextStates (collapse (state-transition $curState)))
-                    (($q2 $uid) (enqueue-next-states! $curState $q1 $nextStates $nextUID))
-                ) (fw-state-search $q2 $uid $statesLimit))
-            )))
-        )
+(= (fw-state-search $curState $nextUID $statesLimit) ;; CHECK VISITED STATE?
+    
+    (let () 
+            ; ()
+            (println! 
+                (Processing $curState 
+                    (collapse (match &kb (State $curState $f) $f))
+                    (collapse (match &kb (Succ $from ($action $args) $curState) ($from ($action $args))))
+                    ; (state-visited $curState)
+                ))
+        (if (not (state-enqueued? $curState)) FailedToReachGoal
+        (if (goal-satisfied $curState) (retrace-steps $curState)
+        (if (> $curState $statesLimit)  (Error $statesLimit "Limit of states exploration reached.")   
+        (let* (
+            ($nextStates (collapse (state-transition $curState)))
+            ($uid (enqueue-next-states! $curState $nextStates $nextUID))
+            ($nextFront (+ $curState 1))
+        ) (fw-state-search $nextFront $uid $statesLimit)))))
     )
 )
 
 (= (planner-main $statesLimit)
     (let* (
         ($initState ((None None) (match &kb (:init $f) $f)))
-        (($initQ $nextUID) (enqueue-next-states! -1 () ($initState) 0))
+        ($nextUID (enqueue-next-states! -1 ($initState) 0))
     ) 
     ; ()
-    (fw-state-search $initQ $nextUID $statesLimit)
+    (fw-state-search 0 $nextUID $statesLimit)
     )
 )
 
-
 ;; NEXT: modularize space
 
+;; work around for unify predicate
 (= (unf $x $y $s $f)
     (let $unf (collapse 
         (let $x $y True)
@@ -310,9 +264,6 @@
 ; !(actions-applicable 1)
 
 ; !(state-transition 1)
-!(import! &kb domain)
-!(import! &kb task1)
+; !(import! &kb domain) ;; Hyperon doesn't allow for importing multiple files into same space
 !(planner-main 100)
-
-
 
