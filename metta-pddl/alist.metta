@@ -101,3 +101,33 @@
         )
     )
 )
+
+(= (L-subset? $list1 $list2)
+    (if (== $list1 ())
+        True
+        (let ($h $rest) (decons-atom $list1)
+            (if (L-contains? $list2 $h)
+                (L-subset? $rest $list2)
+                False
+            )
+        )
+    )
+)
+
+(= (L-seteq? $list1 $list2)
+    (and (L-subset? $list1 $list2)
+        (L-subset? $list2 $list1))
+)
+
+(= (L-intersection $list1 $list2)
+    (if (== $list1 ())
+        ()
+        (let* (
+            (($h $t) (decons-atom $list1))
+            ($inters (L-intersection $t $list2))
+        ) (if (L-contains? $list2 $h)
+            (cons-atom $h $inters)
+            $inters
+        ))
+    )
+)

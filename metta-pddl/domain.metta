@@ -3,6 +3,7 @@
 
 ;; predicates: clear/1, on-table/1, arm-empty, holding/1, on/2
 
+;; solved for 2 objects, 5 predicates; with 3 objects, take painstakingly long
 (:object a) (:object b)
 (:init (
     (on-table a)
@@ -79,11 +80,10 @@
         ((And $x) (empty))
         ((Or $x) (empty))
         ((Not $x) (empty))
-        ($_ (let $all (collapse (match &self (State $stateId $expr) True))
+        ($1 (let $all (collapse (match &self (State $stateId $expr) True))
                 (if (== $all ()) False True)))
     ))
 )
-
 
 ;; check if an action is applicable in a state
 (= (action-applicable $stateId $actionId $args)
@@ -101,7 +101,7 @@
 (= (args-combination $params)
     (if (== $params ()) ()
         (let* (
-            (($_ $rest) (decons-atom $params))
+            (($1 $rest) (decons-atom $params))
             ($h (match &self (:object $o) $o))
             ($r (args-combination $rest))
         ) (cons-atom $h $r))
@@ -116,7 +116,7 @@
             :effect $effs
     ) (let* (
         ($args (args-combination $params))
-        ($_ (unify $args $params True (Error $params FailedUnification)))
+        ($1 (unify $args $params True (Error $params FailedUnification)))
         ) (if (formula-satisfaction $stateId $preds) ($actionId $params) (empty))
     ))
 )
@@ -177,7 +177,8 @@
 ;; Performance note: use space for global state versus pass as arguments, 
 ;; depends on complexity of (match)
 
-!(import! &self list)
+; !(import! &self list.metta)
+(import! &self list)
 
 (= (add-state-fluents! $stateId $fluents)
     (if (== $fluents ())
@@ -229,26 +230,27 @@
     )
 )
 
+
 ;; NEXT: modularize space
 
 ;; state fluents must all be grounded, TODO: semantics for non-ground state?
-; (State 1 (clear ball)) (State 1 (on-table ball)) (State 1 (arm-empty))
+(State 1 (clear b)) (State 1 (on-table b)) (State 1 (arm-empty))
 
-; !(formula-satisfaction 1 (clear ball))
-; !(formula-satisfaction 1 (Not (holding ball)))
-; !(formula-satisfaction 1 (Or ((clear ball) (holding ball))))
-; !(formula-satisfaction 1 (And ((clear ball) (Not (holding ball)))))
-; !(formula-satisfaction 1 
-;     (Or ((arm-empty) (And ((holding ball) (clear ball)))))
-; )
+!(formula-satisfaction 1 (clear b))
+!(formula-satisfaction 1 (Not (holding b)))
+!(formula-satisfaction 1 (Or ((clear b) (holding b))))
+!(formula-satisfaction 1 (And ((clear b) (Not (holding b)))))
+!(formula-satisfaction 1 
+    (Or ((arm-empty) (And ((holding b) (clear b)))))
+)
 
-; !(action-applicable 1 pickup (ball))
-; !(action-applicable 1 putdown (ball))
-; !(actions-applicable 1)
+!(action-applicable 1 pickup (b))
+!(action-applicable 1 putdown (b))
+!(actions-applicable 1)
 
 ; !(state-transition 1)
 
-!(planner-main 100)
+; !(planner-main 100)
 
 ;; check state
 ; !(SignPost "Checking States starting here")
